@@ -1,56 +1,51 @@
 #!/bin/bash
 
-# Output a message indicating the start of the deployment
-echo "Starting deployment..."
+set -e
 
-# Update the repository
+echo "🚀 Starting deployment..."
+
 git pull origin main
 
-# Check if the .env file exists
 if [ -f ".env" ]; then
-    echo ".env file exists, skipping generation."
+    echo "✅ .env file exists, skipping generation."
 else
-    echo "Creating .env file..."
+    echo "📄 Creating .env file..."
     cp .env.example .env
 fi
 
-# Update dependencies via Composer
-echo "Installing composer dependencies..."
-./vendor/bin/sail composer install --no-interaction --prefer-dist
+if [ ! -d "vendor" ]; then
+    echo "📦 Installing Composer dependencies..."
+    docker run --rm \
+        --pull=always \
+        -v "$(pwd)":/opt \
+        -w /opt \
+        laravelsail/php84-composer:latest \
+        bash -c "composer install"
+else
+    echo "✅ Vendor directory exists, skipping Composer install."
+fi
 
-# Update dependencies via npm (for Vue.js and SSR)
-echo "Installing npm dependencies..."
-./vendor/bin/sail npm install
-
-# Install SSR dependencies (if applicable)
-echo "Installing SSR dependencies..."
-./vendor/bin/sail npm run dev
-
-# Run database migrations
-echo "Running database migrations..."
-./vendor/bin/sail artisan migrate --force
-
-# Cache configurations and routes
-echo "Caching configurations..."
-./vendor/bin/sail artisan config:cache
-./vendor/bin/sail artisan route:cache
-
-# Build the frontend assets (including SSR)
-echo "Building frontend assets (SSR)..."
-./vendor/bin/sail npm run production
-
-# Restart Docker containers to apply changes
-echo "Restarting Docker containers..."
-./vendor/bin/sail down
+echo "🐳 Starting Docker containers..."
 ./vendor/bin/sail up -d
 
-# Clear cache (if necessary)
-echo "Clearing cache..."
-./vendor/bin/sail artisan cache:clear
+./vendor/bin/sail ps | grep "lapp.test" > /dev/null
+if [ $? -ne 0 ]; then
+    echo "❌ Sail is not running. Check your Docker setup."
+    exit 1
+fi
 
-# Optionally, you can also restart the queue worker if used
-# echo "Restarting queue worker..."
-# ./vendor/bin/sail artisan queue:restart
+echo "📊 Running migrations..."
+./vendor/bin/sail artisan migrate --force
 
-# Output a message with a link to open the website
-echo "Deployment complete! You can access the website at http://localhost:8082"
+if [ ! -d "node_modules" ]; then
+    echo "📦 Installing npm dependencies..."
+    ./vendor/bin/sail npm install
+else
+    echo "✅ Node modules exist, skipping npm install."
+fi
+
+echo "⚙️ Building frontend..."
+./vendor/bin/sail npm run build
+./vendor/bin/sail npm run ssr
+
+echo "✅ Deployment complete! You can access the website at http://localhost:8082"

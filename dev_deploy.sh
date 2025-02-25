@@ -60,14 +60,12 @@ if [ ! -d "node_modules" ]; then
         -v "$(pwd):/var/www/html" \
         -w /var/www/html \
         node:18 \
-        npm install \
-        npm run build
+        npm install
 else
     echo "✅ node_modules directory exists, skipping Composer install."
 fi
 
-#echo "⚙️ Building frontend..."
-#./vendor/bin/sail npm run build
-#./vendor/bin/sail npm run ssr
+echo "⚙️ Building frontend..."
+./vendor/bin/sail npm run builld
 
 echo "✅ Deployment complete! You can access the website at http://localhost:8082"

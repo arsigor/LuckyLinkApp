@@ -16,7 +16,7 @@
 3. Grant execute permissions to the directory:
 
     ```bash
-    chmod -R 775 storage bootstrap
+    chmod -R 777 .
     ```
 
 4. Run the script on any Linux or macOS system:

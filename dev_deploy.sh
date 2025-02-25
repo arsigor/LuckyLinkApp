@@ -66,6 +66,6 @@ else
 fi
 
 echo "⚙️ Building frontend..."
-./vendor/bin/sail npm run builld
+./vendor/bin/sail npm run build
 
 echo "✅ Deployment complete! You can access the website at http://localhost:8082"

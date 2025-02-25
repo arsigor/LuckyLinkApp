@@ -16,7 +16,6 @@ fi
 if [ ! -d "vendor" ]; then
     echo "📦 Installing Composer dependencies..."
     docker run --rm \
-        -u "$(id -u):$(id -g)" \
         -v "$(pwd):/var/www/html" \
         -w /var/www/html \
         laravelsail/php84-composer:latest \
@@ -55,11 +54,20 @@ fi
 echo "📊 Running migrations..."
 ./vendor/bin/sail artisan migrate --force
 
-echo "💼 Checking npm dependencies..."
-./vendor/bin/sail npm install
+if [ ! -d "node_modules" ]; then
+    echo "💼 Installing Npm dependencies..."
+    docker run --rm \
+        -v "$(pwd):/var/www/html" \
+        -w /var/www/html \
+        node:18 \
+        npm install \
+        npm run build
+else
+    echo "✅ node_modules directory exists, skipping Composer install."
+fi
 
-echo "⚙️ Building frontend..."
-./vendor/bin/sail npm run build
-./vendor/bin/sail npm run ssr
+#echo "⚙️ Building frontend..."
+#./vendor/bin/sail npm run build
+#./vendor/bin/sail npm run ssr
 
 echo "✅ Deployment complete! You can access the website at http://localhost:8082"
